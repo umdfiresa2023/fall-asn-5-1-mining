@@ -22,24 +22,28 @@ library("tidyverse")
 Instructions: Upload your team's final dataframe into Posit Cloud. Use the read.csv function to upload the dataframe into the Posit Cloud Environment.
 
 ```{r}
-
+read.csv("loadsdatatable.csv") -> final
 ```
 
 **Question 1: What is the unit of each observation in the data? (2 points)**
 
 Instructions: Identify which columns in the dataset make each observation unique. Usually, there is a column indicating geographical locations and another column showing the frequency of the data. For an example, you can look at asn-6-4-key.qmd Part 1 Question 1.
 
-Answer:
+Answer:Year and mine number
 
 **Question 2: What is the outcome variable? (2 points)**
 
 Instructions: Indicate which columns represent the outcome variable and describe its unit.
 
-Answer:
+Answer: Number of conflicts per year
 
 **Question 3: What are the treatment and control variables?** **(4 points)**
 
 Instructions: For this assignment, you will not distinguish between the treatment and control variables. Instead, please list all treatment and control variables. For each variable, indicate whether it is a numerical variable or a categorical variable.
+
+Whether the mine was active, before during and after. - numerical
+
+type of mine - categorical
 
 ### **Part 2. Running a Basic Regression**
 
@@ -47,13 +51,18 @@ Instructions: For this assignment, you will not distinguish between the treatmen
 
 Instructions: Choose a numerical variable that would best predict the outcome variable. As we are trying to predict the outcome, this variable does not have to be the treatment variable.
 
-Answer:
+Answer: conflicts per year
 
 **Question 5: What does the best-fitting line look like between the numerical variable and the outcome variable? (2 points)**
 
 Instructions: Make a scatterplot that shows the relationship between the numerical variable and the outcome variable. In addition, add geom_smooth(method="lm", se=FALSE) to show the best-fitting line. You can also review this concept in this [DataCamp video.](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-basic-regression?ex=1)
 
 ```{r}
+finalish <- final %>%
+  mutate(num_open= year_de - year_do + 1) 
+
+ggplot(data = finalish, mapping = aes(x= num_open , y= n )) + geom_point() + geom_smooth(method="lm", se=FALSE)
+
 
 ```
 
@@ -62,18 +71,19 @@ Instructions: Make a scatterplot that shows the relationship between the numeric
 Instructions: Fit a regression model with the lm(y\~x, data) function to predict the outcome variable using the numerical variable that you have chosen. You can also review this concept in this [DataCamp video.](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-basic-regression?ex=1)
 
 ```{r}
-
+output <- lm(n~ num_open, data = finalish)
+ output
 ```
 
 **Question 7: Based on your regression results, what are the values and description of each letter in the equation** $Y_{it} = \beta_0 + \beta_1 X_{it} + \epsilon_{it}$ **(5 points)**
 
 Instructions: For an example of this, you can review asn-6-4-key.qmd Part 1.
 
-$Y_{it}$ represent the outcome variable \_\_\_\_ for each \_\_\_\_ (geographical unit) $i$, and \_\_\_\_\_ (time unit) $t$.
+$Y_{it}$ represent the outcome variable \_\_num of conflicts\_\_ for each \_\_mine\_\_ (geographical unit) $i$, and \_\_year\_\_\_ (time unit) $t$.
 
-Based on the regression from Question 6, $\beta_0$ is equal to \_\_\_\_\_.
+Based on the regression from Question 6, $\beta_0$ is equal to \_\_0.13832\_\_\_.
 
-Based on the regression from Question 6, $\beta_1$ is equal to \_\_\_\_\_.
+Based on the regression from Question 6, $\beta_1$ is equal to \_\_\_0.01739\_\_.
 
 ### **Part 3. Running Multiple Regressions**
 
