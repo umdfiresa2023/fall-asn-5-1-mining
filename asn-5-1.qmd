@@ -22,26 +22,28 @@ library("tidyverse")
 Instructions: Upload your team's final dataframe into Posit Cloud. Use the read.csv function to upload the dataframe into the Posit Cloud Environment.
 
 ```{r}
-
-
-
+read.csv("loadsdatatable.csv") -> final
 ```
 
 **Question 1: What is the unit of each observation in the data? (2 points)**
 
 Instructions: Identify which columns in the dataset make each observation unique. Usually, there is a column indicating geographical locations and another column showing the frequency of the data. For an example, you can look at asn-6-4-key.qmd Part 1 Question 1.
 
-Answer:
+Answer: Year (frequency) and mine number (geographical locations)
 
 **Question 2: What is the outcome variable? (2 points)**
 
 Instructions: Indicate which columns represent the outcome variable and describe its unit.
 
-Answer:
+Answer: The outcome variable is the number of conflicts that occurred in the radius of each mine over the specified time frame. The columns that store the outcome variable are: pre-active, n, and post-active. These columns represent the number of conflicts that occurred before mine open (pre-active), during mine operation (n), or after mine close (post-active) for each year in the data.
 
 **Question 3: What are the treatment and control variables?** **(4 points)**
 
 Instructions: For this assignment, you will not distinguish between the treatment and control variables. Instead, please list all treatment and control variables. For each variable, indicate whether it is a numerical variable or a categorical variable.
+
+Answer: Treatment variable: Whether a mine was active before, during, or after a conflict occurred - categorical variable
+
+Control variable: Type of mine - categorical variable, Mining permit holder - categorical variable
 
 ### **Part 2. Running a Basic Regression**
 
@@ -49,13 +51,15 @@ Instructions: For this assignment, you will not distinguish between the treatmen
 
 Instructions: Choose a numerical variable that would best predict the outcome variable. As we are trying to predict the outcome, this variable does not have to be the treatment variable.
 
-Answer:
+Answer: Number of years a mine was open
 
 **Question 5: What does the best-fitting line look like between the numerical variable and the outcome variable? (2 points)**
 
 Instructions: Make a scatterplot that shows the relationship between the numerical variable and the outcome variable. In addition, add geom_smooth(method="lm", se=FALSE) to show the best-fitting line. You can also review this concept in this [DataCamp video.](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-basic-regression?ex=1)
 
 ```{r}
+ggplot(data = final, mapping = aes(x= active_97_22 , y= n)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+
 
 ```
 
@@ -64,18 +68,25 @@ Instructions: Make a scatterplot that shows the relationship between the numeric
 Instructions: Fit a regression model with the lm(y\~x, data) function to predict the outcome variable using the numerical variable that you have chosen. You can also review this concept in this [DataCamp video.](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-basic-regression?ex=1)
 
 ```{r}
-
+output <- lm(n ~ active_97_22, data = final)
+output
 ```
+
+Answer: The slope is 0.031 and the intercept is 0.064 for the best-fitting line
 
 **Question 7: Based on your regression results, what are the values and description of each letter in the equation** $Y_{it} = \beta_0 + \beta_1 X_{it} + \epsilon_{it}$ **(5 points)**
 
 Instructions: For an example of this, you can review asn-6-4-key.qmd Part 1.
 
-$Y_{it}$ represent the outcome variable \_\_\_\_ for each \_\_\_\_ (geographical unit) $i$, and \_\_\_\_\_ (time unit) $t$.
+$Y_{it}$ represents the outcome variable, which is number of conflicts that occurred while each *mine* (geographical unit) $i$ was active, by the number of *years* it was active (time unit) $t$.
 
-Based on the regression from Question 6, $\beta_0$ is equal to \_\_\_\_\_.
+$\beta_0$ represents the intercept of the regression line, which is equal to 0.064. This value indicates that a mine that is open for 0 years is predicted to have 0.064 conflicts, which is a meaningless value in practice.
 
-Based on the regression from Question 6, $\beta_1$ is equal to \_\_\_\_\_.
+$\beta_1$ represents the slope of the regression line, which is equal to 0.031. This value indicates that for additional every year a mine is open, it is predicted to experience 0.031 additional conflicts
+
+$X_{it}$ represents the number of years (t) a mine (i) was active
+
+$\epsilon_{it}$ represents the error term of the linear regression, which is the variation between the observed and predicted number of conflicts for each mine.
 
 ### **Part 3. Running Multiple Regressions**
 
@@ -84,6 +95,8 @@ Based on the regression from Question 6, $\beta_1$ is equal to \_\_\_\_\_.
 Instructions: You can review how to do this in this [DataCamp](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-multiple-regression?ex=4) video. Please use the get_regression_table( ) function to print the output.
 
 ```{r}
+mult_regression <- lm(n ~ active_97_22 + year_do + year_de + year, data = final)
+get_regression_table(mult_regression)
 
 ```
 
@@ -92,8 +105,12 @@ Instructions: You can review how to do this in this [DataCamp](https://campus.da
 Instructions: You can review how to do this in this [DataCamp](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-multiple-regression?ex=4) video.
 
 ```{r}
-
+get_regression_points(mult_regression) %>%
+  mutate(sq_residual = residual^2) %>%
+  summarize(sq_residuals = sum(sq_residual))
 ```
+
+Answer: Sum of squared residuals = 493,725.3
 
 **Question 10: Run a multiple regression model that uses all possible numerical, binary, and categorical variables to predict the outcome variable. What does the regression table look like? (2 points)**
 
@@ -114,7 +131,8 @@ library("lfe")
 Write your model below and run it.
 
 ```{r}
-
+categ_regression <- felm(n ~ active_97_22 + year_do + year_de + year | resource + parties, data = final) 
+summary(categ_regression)
 ```
 
 **Question 11: What is the sum of squared residuals from the model that you ran in Question 10? (2 points)**
@@ -122,40 +140,78 @@ Write your model below and run it.
 Instructions: Because the function get_regression_points( ) does not work with the function felm( ), you have to replace get_regression_points(ModelName) with ModelName\$residuals. The rest of the code is the same as this [DataCamp](https://campus.datacamp.com/courses/modeling-with-data-in-the-tidyverse/modeling-with-multiple-regression?ex=4) video.
 
 ```{r}
+sq_residuals <- categ_regression$residuals^2
+sum_sq_residuals <- sum(sq_residuals)
+sum_sq_residuals
+
+
 
 ```
+
+Answer: sum of squared residuals = 424,581.1
 
 **Question 12: What equation describes the regression in Question 10? What are the values of each coefficient? (2 points)**
 
 Instructions: You can modify the equation shown below. Afterwards, indicate the value of each $\beta$ . To see an example of how categorical variables are written in an equation, see asn-6-4-key.qmd Part 1 Question 4, 5, and 6.
 
-Answer: $Y_{it} = \beta_0 + \beta_1 X_{it} + \epsilon_{it}$
+Answer: $Y_{it} = \beta_0 + \beta_1 X_{it} + \beta_2 YearOpen_{it} + \beta_3 YearClose_{it} + \beta_4 Year + Resource_{i} + Parties_{i} + \epsilon_{it}$
+
+$Y_{it}$ represents the outcome variable, which is number of conflicts that occurred while each *mine* (geographical unit) $i$ was active, by the number of *years* it was active (time unit) $t$.
+
+$\beta_1$ represents the fitted slope coefficient for the number of years a mine is active after taking into account all of the other variables (year mine opened, year mine closed, year conflicts occurred, resources the mine produces, and the companies which hold the mining permit), which is equal to 0.046. This value indicates that for every year a mine is open, it is predicted to experience 0.046 additional conflicts (after taking into account all of the other variables).
+
+$X_{it}$ represents the number of years (t) a mine (i) was active.
+
+$\beta_2$ represents the fitted slope coefficient for the year a mine was opened after taking into account all of the other variables (number of years a mine is active, year mine closed, year conflicts occurred, resources the mine produces, and the companies which hold the mining permit), which is equal to 0.039. This value indicates that for every one year increase for the year a mine opened, the mine is predicted to experience 0.039 additional conflicts (after taking into account all of the other variables).
+
+$YearOpen_{it}$ represents the year (t) a mine (i) opened.
+
+$\beta_3$ represents the fitted slope coefficient for the year a mine was closed, after taking into account all of the other variables (number of years a mine is active, year mine opened, year conflicts occurred, resources the mine produces, and the companies which hold the mining permit), which is equal to -0.004. This value indicates that for every one year increase for the year a mine closed, the mine is predicted to experience 0.004 less conflicts (after taking into account all of the other variables).
+
+$YearClose_{it}$ represents the year (t) a mine (i) opened.
+
+$\beta_4$ represents the fitted slope coefficient for the year a conflict occurred, after taking into account all other variables (number of years a mine is active, year mine opened, year mine closed, resources the mine produces, and the companies which hold the mining permit), which is equal to 0.03. This value indicates that there is a predicted increase in 0.03 conflicts for every year that passes between 1997 and 2022.
+
+$Year$ represents the year (between 1997 and 2022) in which a conflict occurred.
+
+$Resource_{i}$ represents the fixed effects for the resources each mine (i) produces.
+
+$Parties_{i}$ represents the fixed effects for the mining companies which operate each mine (i)
+
+$\epsilon_{it}$ represents the error term of the linear regression, which is the variation between the observed and predicted number of conflicts for each mine.
 
 **Question 13: Create more binary or categorical variables by multiplying binary variables or combining categorical variables together as you see fit to better predict the outcome variable. Explain what real-world factor each new variable represents. (2 points)**
 
 Instructions: You created new variables by multiplying binary variables and combining categorical variables in asn-6-4-key.qmd Part 2. You explained what each variable represents in asn-6-4-key.qmd Part 1 Question 4, 5, and 6.
 
 ```{r}
+final2 <- final %>%
+  mutate(resource_and_company = paste(resource, "-", parties))
 
 ```
 
-Answer:
+Answer: The resource_and_company variable is a new categorical variable which combines the resource and parties columns into one column (parties being which mining companies were given the permit). I am curious as to whether certain companies will have more conflicts at certain types of mines, which is why I am creating this variable as a fixed effect.
 
 **Question 14: Run a multiple regression model that uses all possible numerical, binary, and categorical variables to predict the outcome variable. What does the regression table look like? (2 points)**
 
 ```{r}
-
+party_regression <- felm(n ~ active_97_22 + year_do + year_de + year | resource_and_company, data = final2) 
+summary(party_regression)
 ```
 
 **Question 15: What is the sum of squared residuals from the model in Question 13? (2 points)**
 
 ```{r}
-
+sq_residuals2 <- party_regression$residuals^2
+sum_sq_residuals2 <- sum(sq_residuals2)
+sum_sq_residuals2
 ```
+
+Answer: Sum of squared residuals = 415,417.5
 
 **Question 16: Based on the sum of squared residuals, which model in this assignment best predicts the outcome? (1 point)**
 
-Answer:
+Answer: Our last multiple regression model (that combined the resource and parties categorical variables into one variable) had a lower sum of squared residuals compared to all the other regression models in this assignment, so it is therefore the best at predicting the outcome variable.
 
 ### **Part 4. Thinking about causal inference**
 
@@ -163,6 +219,6 @@ Note: Every team except Team Electric Grid and The Whistle Blowers has to comple
 
 **Question 17: In your opinion, what are some real-world factors that impact both the treatment and control variables that we have not taken into account? (2 points)**
 
-Answer:
+Answer: There are many other real-world factors that may impact the treatment variable (whether a mine is active when a conflict occurs in the mine's radius) or control variables (the type of mine, or the mining companies which hold the permit). Some examples of these factors may be rebel group presence (mines in the presence of more rebel groups could experience more conflict and stay open for less time) and whether a mine can classified as an artisinal or large-scale mine (artisinal mines could experience more conflict and stay open for less time due to a variety of reasons).
 
 You have reached the end of this assignment. Commit and push your updates back into the GitHub repository. You can find the step-by-step tutorial [here.](https://drive.google.com/drive/u/0/folders/1eSMfNoV_ilp4OnID2Ql3YT2qXkhCS7Vm)
